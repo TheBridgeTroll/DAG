@@ -1,23 +1,31 @@
-# Airflow podróbka
+# DAG
 
-Projekt systemu do definiowania, wizualizacji i wykonywania workflowów/DAG-ów.
+Orkiestrator workflowów w Pythonie z GUI do składania ich z klocków.
 
-Główna idea: połączyć orkiestrację procesów znaną z Apache Airflow z wygodnym, wizualnym budowaniem workflowów w stylu Kestra oraz jawnym przepływem danych i wizualizacją zależności inspirowaną Kedro/Kedro-Viz. Pythonowe API ma pozostać możliwie naturalne: zwykłe funkcje, dekoratory, argumenty i wartości zwracane.
+Inspiracje: Airflow, Kestra, Prefect, Marimo i Kedro. Bierzemy z nich to, co ma sens, bez kopiowania całego syfu.
 
-## Główne założenia
+Workflow można:
+- napisać w Pythonie jako funkcje z dekoratorami;
+- złożyć w GUI, przeciągając taski i łącząc ich wejścia z wyjściami.
 
-- workflow jest grafem DAG;
-- task może być zwykłą funkcją Pythona opakowaną dekoratorem;
-- wejścia i wyjścia tasków są jawne i widoczne na diagramie;
-- workflow można tworzyć zarówno w kodzie Python, jak i z poziomu GUI;
-- GUI pozwala przeciągać gotowe klocki i łączyć ich porty;
-- Python i GUI muszą operować na tym samym modelu workflow;
-- system musi działać na Windows 11, Windows Server i Linux;
-- Docker jest docelowym sposobem wdrożenia, ale nie warunkiem działania aplikacji;
-- docelowo repozytorium ma zawierać Dockerfile oraz docker-compose.yml.
+Oba sposoby mają tworzyć ten sam DAG.
 
-## Dokumentacja
+Task bierze normalne argumenty, zwraca normalne wartości, a przepływ danych widać na diagramie. Węzły mają wejścia, wyjścia, typy, parametry i konfigurację wykonania.
 
-- [Wizja projektu](docs/vision.md)
-- [Wymagania](docs/requirements.md)
-- [Wstępna architektura](docs/architecture.md)
+System ma ogarniać m.in.:
+- wykonywanie DAG-ów;
+- zależności między taskami;
+- retry;
+- statusy;
+- logi;
+- historię wykonań;
+- scheduling.
+
+Musi działać na Windows 11, Windows Server i Linuxie. Bez wymagania WSL, basha i innych unixowych cudów.
+
+Docelowo całość ma dać się odpalić przez `Dockerfile` + `docker-compose.yml`, ale Docker nie może być potrzebny do zwykłego uruchomienia aplikacji.
+
+Więcej:
+- [wizja](docs/vision.md)
+- [wymagania](docs/requirements.md)
+- [architektura](docs/architecture.md)
