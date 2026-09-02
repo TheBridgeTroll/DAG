@@ -30,6 +30,50 @@ Model musi ogarniać przynajmniej:
 - konfigurację wykonania;
 - metadane potrzebne do wizualizacji.
 
+## Użytkownicy i projekty
+
+Aplikacja obsługuje logowanie użytkowników i jest projektowana pod pracę zespołową.
+
+Użytkownik może należeć do wielu projektów. Każdy projekt ma własnych członków oraz osobne uprawnienia, np. właściciel, administrator, edytor albo tylko odczyt.
+
+Projekty mogą być:
+- publiczne;
+- prywatne.
+
+Widoczność projektu nie oznacza automatycznie prawa do jego edycji. Uprawnienia są nadawane osobno dla każdego projektu.
+
+Projekt jest główną granicą dostępu do znajdujących się w nim danych, kodu i diagramów.
+
+## Edycja kodu
+
+Aplikacja udostępnia dwa niezależne mechanizmy edycji kodu:
+
+1. Pełne IDE do normalnej pracy z plikami projektu.
+2. Mikroedytory osadzone bezpośrednio w elementach diagramu.
+
+Mikroedytor służy do szybkiej edycji kodu powiązanego z konkretnym elementem diagramu. Pełne IDE służy do większych zmian i normalnej pracy nad projektem.
+
+Oba mechanizmy pracują na tym samym kodzie i tym samym stanie projektu.
+
+## Zewnętrzne IDE
+
+Kod projektu musi pozostać normalnym kodem, który można edytować również poza aplikacją, np. w VS Code, JetBrains albo dowolnym innym edytorze.
+
+Zewnętrzna edycja plików nie może uszkodzić projektu ani wymagać korzystania wyłącznie z naszego IDE.
+
+Pliki projektu są źródłem prawdy. Diagram jest ich reprezentacją, a nie osobnym źródłem kodu.
+
+## Synchronizacja zmian
+
+Zmiany wykonane poza aplikacją powinny być wykrywane i ładowane na żywo.
+
+Po zmianie pliku aplikacja powinna odpowiednio odświeżyć:
+- wbudowane IDE;
+- mikroedytory;
+- powiązane elementy diagramu.
+
+Synchronizacja musi być bezpieczna. Aplikacja nie może bezmyślnie nadpisywać niezapisanych zmian. W przypadku konfliktu albo chwilowo niepoprawnego kodu powinna pokazać problem i pozwolić użytkownikowi go rozwiązać, zamiast rozwalić stan projektu.
+
 ## Platformy
 
 System musi działać na:
