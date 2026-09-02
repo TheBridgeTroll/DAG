@@ -1,23 +1,16 @@
-# Wstępna architektura
+# Architektura
 
-Ten dokument opisuje kierunek, a nie zamkniętą decyzję technologiczną.
+Na razie to kierunek, nie wykuty w kamieniu stack.
 
-## Główne warstwy
+Workflow musi mieć jedną reprezentację. GUI i Python nie mogą trzymać swoich wersji, bo za pół roku rozjadą się jak cholera.
 
-### 1. Workflow model
+```text
+Python SDK ─┐
+            ├──> Workflow Model ──> Execution Engine
+Visual GUI ─┘
+```
 
-Centralna, neutralna reprezentacja DAG-a.
-
-Powinna być niezależna od:
-
-- GUI;
-- sposobu definiowania workflowu;
-- sposobu wykonania;
-- konkretnego systemu operacyjnego.
-
-Naturalnym kandydatem na format serializacji jest JSON lub YAML.
-
-Przykładowa reprezentacja logiczna:
+Model DAG-a powinien być niezależny od GUI, sposobu wykonania i systemu operacyjnego. Do serializacji najpewniej JSON albo YAML.
 
 ```text
 Workflow
@@ -30,11 +23,9 @@ Workflow
      └─ Task A.output -> Task B.input
 ```
 
-### 2. Python SDK
+## Python SDK
 
-Warstwa pozwalająca definiować taski i workflowy w Pythonie.
-
-Przykładowy kierunek API:
+Dekorator typu `@task` zbiera metadane potrzebne do zbudowania DAG-a, ale sama funkcja dalej ma wyglądać normalnie:
 
 ```python
 @task
@@ -42,54 +33,21 @@ def transform(df: DataFrame) -> DataFrame:
     ...
 ```
 
-Dekorator powinien rejestrować metadane potrzebne do zbudowania wspólnego modelu workflow.
+## Execution engine
 
-### 3. Execution engine
+Ma ogarniać kolejność wykonania, przekazywanie wyników, błędy, retry, statusy, logi i później scheduling. Core musi działać tak samo na Windowsie i Linuxie.
 
-Silnik odpowiedzialny za:
+## Backend / API
 
-- ustalenie kolejności wykonania;
-- wykonywanie tasków;
-- przekazywanie wyników;
-- obsługę błędów;
-- retry;
-- statusy;
-- rejestrowanie logów;
-- przyszły scheduling.
+GUI i workery muszą przez coś gadać. Backend będzie ogarniał workflowy, uruchomienia, statusy, logi, historię i bibliotekę dostępnych tasków.
 
-Core silnika musi być cross-platformowy.
+## GUI
 
-### 4. Backend / API
+Node editor. Task to klocek z nazwą, wejściami, wyjściami, parametrami, typami danych i statusem. Połączenie portów tworzy krawędź DAG-a.
 
-Warstwa komunikacyjna dla GUI i workerów.
+## Deployment
 
-Będzie odpowiadać m.in. za:
-
-- CRUD workflowów;
-- uruchamianie workflowów;
-- pobieranie statusów;
-- logi;
-- historię wykonań;
-- bibliotekę dostępnych typów tasków.
-
-### 5. Visual editor
-
-GUI typu node editor.
-
-Każdy task jest klockiem posiadającym:
-
-- nazwę;
-- wejścia;
-- wyjścia;
-- parametry;
-- typy danych;
-- status podczas wykonania.
-
-Połączenie portów tworzy krawędź wspólnego modelu DAG.
-
-### 6. Deployment
-
-Docelowo usługi zostaną rozdzielone tak, żeby można je było uruchamiać przez Docker Compose, np.:
+Docelowo Docker Compose. Możliwy podział:
 
 ```text
 frontend
@@ -99,18 +57,4 @@ worker
 metadata database
 ```
 
-Nie jest jeszcze przesądzone, które z tych elementów będą osobnymi procesami/usługami w pierwszym MVP.
-
-## Najważniejsza decyzja architektoniczna na obecnym etapie
-
-GUI i Python nie przechowują własnych niezależnych definicji workflowu.
-
-Oba generują lub modyfikują wspólny model DAG-a:
-
-```text
-Python SDK ─┐
-            ├──> Workflow Model ──> Execution Engine
-Visual GUI ─┘
-```
-
-Dzięki temu workflow może być wizualizowany niezależnie od sposobu, w jaki został utworzony.
+Nie wiemy jeszcze, które z tych rzeczy faktycznie muszą być osobnymi usługami w MVP. Nie ma sensu robić mikroserwisów dla samej przyjemności posiadania większej liczby kontenerów.
