@@ -1,49 +1,16 @@
-# Wizja projektu
+# Wizja
 
-## Cel
+Chcemy orkiestrator workflowów, który da się ogarnąć bez walki z Airflowem i bez wciskania wszystkiego w YAML.
 
-Stworzyć cross-platformowy system do zarządzania procesami/workflowami, którego centralnym elementem jest DAG pokazujący zarówno kolejność wykonywania tasków, jak i przepływ danych pomiędzy nimi.
+Workflow ma być jednym DAG-iem, niezależnie od tego, czy powstał w Pythonie, czy został wyklikany w GUI.
 
-System ma być wygodniejszy do definiowania niż klasyczny Apache Airflow i pozwalać na dwa równorzędne sposoby budowania workflowów:
+W Pythonie task to zwykła funkcja z dekoratorem. Bierze argumenty, zwraca wynik i tyle. Ten przepływ ma być widoczny na diagramie.
 
-1. Python API oparte o funkcje i dekoratory.
-2. Visual editor w GUI oparty o klocki i połączenia między portami.
+W GUI użytkownik bierze gotowe klocki, wrzuca je na diagram i łączy wejścia z wyjściami. Bez pisania kodu, jeśli nie chce.
 
-Obie formy mają reprezentować ten sam workflow, a nie dwa niezależne systemy.
+Z Airflowa bierzemy scheduling, retry, statusy, logi i zależności. Z Prefecta i Marimo prostszy model funkcji. Z Kestry GUI. Z Kedro i Kedro-Viz jawny przepływ danych i sensowny graf.
 
-## Inspiracje
-
-### Apache Airflow
-
-- DAG-i;
-- scheduling;
-- statusy wykonania;
-- retry;
-- logi;
-- zależności pomiędzy taskami.
-
-### Prefect / Marimo
-
-- naturalne funkcje Pythona;
-- dekoratory;
-- task przyjmuje normalne argumenty;
-- task zwraca normalne wartości;
-- zależności wynikają z przepływu danych.
-
-### Kestra
-
-- silny nacisk na GUI;
-- obserwowanie przebiegu workflow;
-- wygodne uruchamianie i zarządzanie procesami;
-- wizualne składanie workflowów.
-
-### Kedro / Kedro-Viz
-
-- jawny przepływ danych;
-- wizualizacja wejść i wyjść;
-- czytelny graf zależności pomiędzy transformacjami danych.
-
-## Przykład mentalnego modelu
+Przykład:
 
 ```python
 @task
@@ -59,7 +26,7 @@ def train(df: DataFrame) -> Model:
     ...
 ```
 
-Powinno odpowiadać diagramowi w rodzaju:
+Na diagramie ma być po prostu:
 
 ```text
 [load_data]
@@ -73,4 +40,4 @@ Powinno odpowiadać diagramowi w rodzaju:
      ▼
 ```
 
-Kluczowa zasada: wartość zwracana przez task jest częścią modelu workflow i może bezpośrednio zasilać wejście kolejnego taska.
+Najważniejsze: wynik jednego taska jest normalnym wejściem następnego, a nie jakimś bocznym mechanizmem doklejonym później.
