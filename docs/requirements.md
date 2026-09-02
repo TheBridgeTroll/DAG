@@ -1,68 +1,59 @@
 # Wymagania
 
-## Wymagania funkcjonalne
+## Workflow w Pythonie
 
-### Definiowanie workflowów w Pythonie
+- workflow da się definiować zwykłymi funkcjami Pythona;
+- funkcje mogą mieć dekoratory, np. `@task`;
+- taski biorą argumenty i zwracają wartości;
+- zależności wynikają z przepływu danych;
+- wejścia i wyjścia są widoczne na diagramie.
 
-- workflow musi dać się definiować za pomocą zwykłych funkcji Pythona;
-- funkcje mogą być oznaczane dekoratorami, np. `@task`;
-- taski przyjmują argumenty i zwracają wartości;
-- połączenia pomiędzy taskami wynikają z przepływu danych;
-- wejścia i wyjścia tasków powinny być widoczne w diagramie.
+## Workflow w GUI
 
-### Definiowanie workflowów w GUI
+- nowy workflow da się zrobić bez pisania kodu;
+- GUI ma bibliotekę gotowych tasków;
+- taski przeciąga się na diagram;
+- użytkownik łączy porty wejściowe z wyjściowymi;
+- diagram pokazuje kierunek przepływu danych;
+- workflow da się zapisać, uruchomić i później edytować.
 
-- użytkownik musi móc utworzyć nowy workflow bez pisania kodu;
-- GUI ma udostępniać bibliotekę gotowych klocków/tasków;
-- klocki mają być przeciągane na diagram;
-- użytkownik łączy porty wejściowe i wyjściowe;
-- diagram powinien pokazywać kierunek przepływu danych;
-- utworzony workflow musi być możliwy do zapisania, uruchomienia i późniejszej edycji.
+## Jeden model DAG-a
 
-### Wspólny model workflow
+Python i GUI nie mogą mieć osobnych formatów workflow. To ma być ten sam model, bo inaczej za chwilę wszystko się rozjedzie.
 
-Python SDK i GUI muszą korzystać z jednego modelu DAG-a.
-
-Nie chcemy sytuacji, w której workflow napisany w Pythonie i workflow zbudowany w GUI są dwoma różnymi bytami z osobnymi zasadami działania.
-
-Model workflow powinien obejmować przynajmniej:
-
+Model musi ogarniać przynajmniej:
 - taski/nody;
-- wejścia;
-- wyjścia;
+- wejścia i wyjścia;
 - typy danych;
 - parametry;
 - zależności;
 - konfigurację wykonania;
 - metadane potrzebne do wizualizacji.
 
-## Wymagania platformowe
+## Platformy
 
 System musi działać na:
-
 - Windows 11;
 - Windows Server;
-- Linux.
+- Linuxie.
 
-Nie wolno projektować podstawowej funkcjonalności w oparciu o założenie obecności:
-
+Nie zakładamy obecności:
 - WSL;
-- bash;
+- basha;
 - unixowego `fork()`;
-- ścieżek typu `/tmp`;
-- mechanizmów dostępnych wyłącznie na systemach POSIX.
+- `/tmp`;
+- innych mechanizmów tylko dla POSIX.
 
-Kod aplikacji powinien być cross-platformowy.
+Core ma być cross-platformowy.
 
 ## Deployment
 
-Docelowo projekt ma zawierać:
-
+Docelowo projekt ma mieć:
 - `Dockerfile`;
 - `docker-compose.yml`;
-- możliwość uruchomienia usług w kontenerach;
-- możliwość uruchomienia aplikacji bez Dockera.
+- możliwość odpalenia usług w kontenerach;
+- możliwość odpalenia aplikacji bez Dockera.
 
-Docker jest warstwą wdrożeniową, a nie wymaganiem koniecznym do działania core aplikacji.
+Docker ma pomagać we wdrożeniu, a nie być kulą u nogi przy developmentcie czy zwykłym uruchomieniu.
 
-Szczególnej uwagi wymaga Windows Server, ponieważ nie można zakładać obecności Docker Desktop. Architektura nie może być od niego zależna.
+Windows Server nie może zależeć od Docker Desktop.
