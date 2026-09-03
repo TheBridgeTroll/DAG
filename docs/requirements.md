@@ -30,6 +30,21 @@ Model musi ogarniać przynajmniej:
 - konfigurację wykonania;
 - metadane potrzebne do wizualizacji.
 
+## Analiza zależności danych
+
+Aplikacja analizuje kod i wykrywa zasoby danych używane przez procesy, przede wszystkim:
+- pliki wejściowe i wyjściowe;
+- tabele i widoki baz danych;
+- operacje odczytu, zapisu i modyfikacji.
+
+Na tej podstawie buduje data lineage, czyli zależności `zasób -> proces -> zasób`.
+
+GUI ma mieć widok zasobów danych. Po kliknięciu tabeli, pliku albo innego zasobu pokazuje wszystkie procesy, które z niego korzystają, wraz z informacją czy dany proces czyta, zapisuje czy modyfikuje zasób.
+
+Widok działa też w drugą stronę: dla procesu pokazuje jego wejścia i wyjścia.
+
+Zależności są odświeżane po ponownym skanie lub wykryciu zmian w kodzie, żeby mapa wynikała z aktualnego kodu, a nie była ręcznie utrzymywaną dokumentacją.
+
 ## Użytkownicy i projekty
 
 Aplikacja obsługuje logowanie użytkowników i jest projektowana pod pracę zespołową.
