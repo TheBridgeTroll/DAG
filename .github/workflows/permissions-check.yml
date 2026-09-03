@@ -1,0 +1,12 @@
+name: Permissions check
+
+on:
+  push:
+    branches:
+      - md
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
