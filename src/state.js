@@ -1,6 +1,8 @@
 export const clone = value => structuredClone(value)
 export const uid = prefix => `${prefix}_${Math.random().toString(36).slice(2, 9)}`
 
+export const PORT_TYPES = ['DataFrame', 'String', 'Number', 'Boolean', 'File', 'Table', 'Any']
+
 export const TASK_TYPES = [
   { type: 'read-sql', label: 'Read SQL', group: 'Źródła', inputs: [], outputs: ['DataFrame'] },
   { type: 'read-csv', label: 'Read CSV', group: 'Źródła', inputs: [], outputs: ['DataFrame'] },
@@ -31,6 +33,21 @@ export function makeNode(type = 'python', name, x = 140, y = 120) {
   }
 }
 
+export function makeEdge(fromNode, toNode, fromPort = fromNode?.outputs?.[0]?.id, toPort = toNode?.inputs?.[0]?.id) {
+  if (!fromNode || !toNode || !fromPort || !toPort) return null
+  return { id: uid('edge'), fromNode: fromNode.id, fromPort, toNode: toNode.id, toPort }
+}
+
+export function normalizeWorkflowEdges(workflow) {
+  workflow.edges = (workflow.edges || []).map(edge => {
+    if (edge.fromNode && edge.fromPort && edge.toNode && edge.toPort) return edge
+    const fromNode = workflow.nodes.find(node => node.id === (edge.fromNode || edge.from))
+    const toNode = workflow.nodes.find(node => node.id === (edge.toNode || edge.to))
+    return makeEdge(fromNode, toNode, edge.fromPort || fromNode?.outputs?.[0]?.id, edge.toPort || toNode?.inputs?.[0]?.id)
+  }).filter(Boolean)
+  return workflow
+}
+
 const load = makeNode('read-sql', 'load_orders', 90, 130)
 const clean = makeNode('python', 'clean_orders', 360, 130)
 const save = makeNode('write-sql', 'save_daily', 630, 130)
@@ -59,11 +76,11 @@ export const state = {
         {
           id: 'sales', name: 'daily_sales_pipeline', schedule: '0 6 * * *', status: 'Success', nodes: [load, clean, save],
           edges: [
-            { id: uid('edge'), from: load.id, to: clean.id },
-            { id: uid('edge'), from: clean.id, to: save.id }
+            makeEdge(load, clean),
+            makeEdge(clean, save)
           ]
         },
-        { id: 'segments', name: 'customer_segmentation', schedule: '0 2 * * 1', status: 'Idle', nodes: [customerRead, segment], edges: [{ id: uid('edge'), from: customerRead.id, to: segment.id }] }
+        { id: 'segments', name: 'customer_segmentation', schedule: '0 2 * * 1', status: 'Idle', nodes: [customerRead, segment], edges: [makeEdge(customerRead, segment)] }
       ],
       files: [], resources: [], runs: []
     },
@@ -135,6 +152,9 @@ export function seedRuns(project = currentProject()) {
   )
 }
 
-for (const project of state.projects) { syncFiles(project); scanLineage(project); seedRuns(project) }
+for (const project of state.projects) {
+  project.workflows.forEach(normalizeWorkflowEdges)
+  syncFiles(project); scanLineage(project); seedRuns(project)
+}
 state.selectedFileId = currentProject().files[0]?.id || null
 state.selectedRunId = currentProject().runs[0]?.id || null
