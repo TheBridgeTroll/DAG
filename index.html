@@ -5,46 +5,55 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
   <meta name="theme-color" content="#08101d">
   <title>DAG Studio</title>
-  <link rel="stylesheet" href="./src/style.css?v=20260906-2">
+  <link rel="stylesheet" href="./src/style.css?v=20260906-3">
+  <style>
+    .boot-status,.boot-error{position:fixed;left:16px;right:16px;top:16px;z-index:9999;padding:12px 14px;border-radius:8px;font:14px system-ui;background:#172036;color:#e5e7eb;border:1px solid #334155}.boot-error{background:#3b121c;border-color:#7f1d1d;color:#fecaca;white-space:pre-wrap}.boot-hidden{display:none}
+  </style>
 </head>
 <body>
   <div id="boot-status" class="boot-status">Uruchamianie DAG Studio…</div>
   <div id="app"></div>
   <script>
     (function () {
-      var started = false;
       var status = document.getElementById('boot-status');
+      var appStarted = false;
+      function errorText(event) {
+        var parts = [event.message || 'nieznany błąd'];
+        if (event.filename) parts.push(event.filename + ':' + event.lineno + ':' + event.colno);
+        if (event.error && event.error.stack) parts.push(event.error.stack);
+        return parts.join('\n');
+      }
       function showError(text) {
-        if (!status) return;
-        status.textContent = text;
+        status.textContent = 'Błąd JavaScript:\n' + text;
         status.className = 'boot-error';
       }
-      window.addEventListener('error', function (event) {
-        showError('Błąd JavaScript: ' + (event.message || 'nieznany błąd'));
+      window.addEventListener('error', function (event) { showError(errorText(event)); });
+      window.addEventListener('unhandledrejection', function (event) { showError('Unhandled Promise: ' + String(event.reason)); });
+      window.__dagBootOk = function () { status.className = 'boot-hidden'; };
+      function loadApp() {
+        if (appStarted) return;
+        appStarted = true;
+        var script = document.createElement('script');
+        script.src = './src/main.js?v=20260906-3';
+        script.onerror = function () { showError('Nie udało się załadować ./src/main.js'); };
+        document.body.appendChild(script);
+      }
+      function loadVue(url, fallback) {
+        var script = document.createElement('script');
+        script.src = url;
+        script.crossOrigin = 'anonymous';
+        script.onload = function () {
+          if (window.Vue) loadApp();
+          else if (fallback) fallback();
+          else showError('Skrypt Vue został pobrany, ale window.Vue nie istnieje.');
+        };
+        script.onerror = function () { if (fallback) fallback(); else showError('Nie udało się pobrać Vue.'); };
+        document.head.appendChild(script);
+      }
+      loadVue('https://cdn.jsdelivr.net/npm/vue@3.5.42/dist/vue.global.prod.js', function () {
+        loadVue('https://unpkg.com/vue@3.5.42/dist/vue.global.prod.js');
       });
-      function bootApp() {
-        if (started) return;
-        started = true;
-        var app = document.createElement('script');
-        app.src = './src/main.js?v=20260906-2';
-        app.onerror = function () { showError('Nie udało się załadować ./src/main.js'); };
-        document.body.appendChild(app);
-      }
-      function fallbackVue() {
-        var vue = document.createElement('script');
-        vue.src = 'https://unpkg.com/vue@3.5.42/dist/vue.global.prod.js';
-        vue.onload = function () { if (window.Vue) bootApp(); else showError('UNPKG załadowany, ale Vue nie jest dostępne.'); };
-        vue.onerror = function () { showError('Nie udało się załadować Vue z jsDelivr ani UNPKG.'); };
-        document.head.appendChild(vue);
-      }
-      var vue = document.createElement('script');
-      vue.src = 'https://cdn.jsdelivr.net/npm/vue@3.5.42/dist/vue.global.prod.js';
-      vue.onload = function () { if (window.Vue) bootApp(); else fallbackVue(); };
-      vue.onerror = fallbackVue;
-      document.head.appendChild(vue);
-      setTimeout(function () {
-        if (!window.Vue && !started) showError('Ładowanie Vue trwa zbyt długo. Sprawdź dostęp do CDN.');
-      }, 8000);
+      setTimeout(function () { if (!window.Vue && !appStarted) showError('Timeout podczas ładowania Vue.'); }, 10000);
     })();
   </script>
 </body>
