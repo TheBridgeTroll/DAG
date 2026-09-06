@@ -1,0 +1,102 @@
+const { createApp, reactive, ref, computed, nextTick } = Vue
+
+const clone = value => JSON.parse(JSON.stringify(value))
+const uid = prefix => prefix + '_' + Math.random().toString(36).slice(2, 9)
+const now = () => new Date().toLocaleTimeString('pl-PL', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+
+const taskLibrary = [
+  {type:'sql-read', label:'Read SQL table', icon:'▣', inputs:[], outputs:[{name:'out',type:'DataFrame'}], code:'@task\ndef read_table():\n    return db.read("raw.table")'},
+  {type:'csv-read', label:'Read CSV', icon:'▤', inputs:[], outputs:[{name:'out',type:'DataFrame'}], code:'@task\ndef read_csv_task():\n    return read_csv("input.csv")'},
+  {type:'python', label:'Python task', icon:'⌁', inputs:[{name:'df',type:'DataFrame'}], outputs:[{name:'out',type:'DataFrame'}], code:'@task\ndef transform(df):\n    return df'},
+  {type:'filter', label:'Filter rows', icon:'◫', inputs:[{name:'df',type:'DataFrame'}], outputs:[{name:'out',type:'DataFrame'}], code:'@task\ndef filter_rows(df):\n    return df[df["active"]]'},
+  {type:'join', label:'Join', icon:'⤨', inputs:[{name:'left',type:'DataFrame'},{name:'right',type:'DataFrame'}], outputs:[{name:'out',type:'DataFrame'}], code:'@task\ndef join(left, right):\n    return left.merge(right)'},
+  {type:'sql-write', label:'Write SQL table', icon:'▣', inputs:[{name:'df',type:'DataFrame'}], outputs:[], code:'@task\ndef write_table(df):\n    db.write("warehouse.output", df)'},
+  {type:'file-write', label:'Write file', icon:'▤', inputs:[{name:'df',type:'DataFrame'}], outputs:[], code:'@task\ndef write_file_task(df):\n    write_file("output.csv", df)'}
+]
+
+function makeNode(name, x, y, type='python', code=null) {
+  const spec = taskLibrary.find(t=>t.type===type) || taskLibrary[2]
+  return {
+    id: uid('node'), name, type, x, y, status:'Idle', retries:2, timeout:10,
+    simulateError:false, params:{}, inputs:clone(spec.inputs).map(p=>({...p,id:uid('in')})), outputs:clone(spec.outputs).map(p=>({...p,id:uid('out')})),
+    code: code || spec.code.replace(/def\s+[a-zA-Z0-9_]+/, 'def '+name), duration:0, retryCount:0
+  }
+}
+
+function baseWorkflow(id, name, schedule, nodes, edges=[]) {
+  return {id,name,schedule,status:'Idle',nodes,edges,undo:[],redo:[],zoom:1,panX:0,panY:0,lastRun:'nigdy'}
+}
+
+const n1 = makeNode('load_orders', 80, 170, 'sql-read', '@task\ndef load_orders():\n    return db.read("raw.sales_orders")')
+const n2 = makeNode('clean_orders', 340, 170, 'python', '@task(retries=2)\ndef clean_orders(df):\n    return df.dropna()')
+const n3 = makeNode('aggregate_daily', 600, 170, 'python', '@task\ndef aggregate_daily(df):\n    return df.groupby("day").sum()')
+const n4 = makeNode('save_daily', 860, 170, 'sql-write', '@task\ndef save_daily(df):\n    db.write("warehouse.sales_daily", df)')
+
+const users = [
+  {id:'u1',name:'Michał',email:'michal@example.local'},
+  {id:'u2',name:'Anna',email:'anna@example.local'},
+  {id:'u3',name:'Robert',email:'robert@example.local'},
+  {id:'u4',name:'Kasia',email:'kasia@example.local'}
+]
+
+function workflowFile(wf){
+  return '# Workflow: '+wf.name+'\n# schedule: '+wf.schedule+'\n\n'+wf.nodes.map(n=>'# task:'+n.id+'\n'+n.code+'\n# endtask').join('\n\n')+'\n'
+}
+
+const project1Workflows = [
+  baseWorkflow('w1','daily_sales_pipeline','0 6 * * *',[n1,n2,n3,n4],[
+    {id:uid('edge'),fromNode:n1.id,fromPort:n1.outputs[0].id,toNode:n2.id,toPort:n2.inputs[0].id},
+    {id:uid('edge'),fromNode:n2.id,fromPort:n2.outputs[0].id,toNode:n3.id,toPort:n3.inputs[0].id},
+    {id:uid('edge'),fromNode:n3.id,fromPort:n3.outputs[0].id,toNode:n4.id,toPort:n4.inputs[0].id}
+  ]),
+  baseWorkflow('w2','customer_segmentation','0 2 * * 1',[
+    makeNode('load_customers',100,190,'csv-read','@task\ndef load_customers():\n    return read_csv("customers.csv")'),
+    makeNode('segment',420,190,'python','@task\ndef segment(df):\n    return model.predict(df)')
+  ]),
+  baseWorkflow('w3','finance_export','0 7 * * 1-5',[
+    makeNode('load_finance',100,190,'sql-read','@task\ndef load_finance():\n    return db.read("finance.transactions")'),
+    makeNode('write_xlsx',420,190,'file-write','@task\ndef write_xlsx(df):\n    write_file("exports/finance.xlsx", df)')
+  ])
+]
+
+const state = reactive({
+  route: location.hash.slice(1)||'dashboard',
+  currentUserId:'u1', activeProjectId:'p1', activeWorkflowId:'w1',
+  selectedNodeIds:[], selectedResourceId:'r1', selectedProcessId:'w1', selectedRunId:null,
+  pendingConnection:null, toast:'', libraryOpen:false, inspectorOpen:false,
+  dragLibraryType:null, dragNode:null, panning:null, clipboard:[],
+  ide:{selectedFileId:'f1',openTabs:['f1'],search:'',dirtyIds:[],externalDrafts:{}},
+  projects:[
+    {
+      id:'p1', name:'Retail Analytics', visibility:'Private', description:'Workflowy analityczne zespołu Retail.',
+      members:[
+        {userId:'u1',role:'Owner'},{userId:'u2',role:'Editor'},{userId:'u3',role:'Viewer'},{userId:'u4',role:'Admin'}
+      ],
+      workflows:project1Workflows,
+      resources:[
+        {id:'r1',name:'raw.sales_orders',type:'Tabela',ops:[{workflowId:'w1',mode:'READ'}]},
+        {id:'r2',name:'warehouse.sales_daily',type:'Tabela',ops:[{workflowId:'w1',mode:'WRITE'}]},
+        {id:'r3',name:'customers.csv',type:'Plik',ops:[{workflowId:'w2',mode:'READ'}]},
+        {id:'r4',name:'analytics.customer_segments',type:'Widok',ops:[{workflowId:'w2',mode:'WRITE'}]},
+        {id:'r5',name:'exports/finance.xlsx',type:'Plik',ops:[{workflowId:'w3',mode:'WRITE'}]},
+        {id:'r6',name:'finance.transactions',type:'Tabela',ops:[{workflowId:'w3',mode:'READ'}]}
+      ],
+      files:[], runs:[]
+    },
+    {
+      id:'p2', name:'Sandbox ETL', visibility:'Public', description:'Drugi projekt do testowania uprawnień.',
+      members:[{userId:'u1',role:'Editor'},{userId:'u2',role:'Owner'},{userId:'u3',role:'Viewer'}],
+      workflows:[baseWorkflow('w4','demo_pipeline','@daily',[makeNode('start',120,180,'python'),makeNode('finish',450,180,'python')])],
+      resources:[], files:[], runs:[]
+    }
+  ]
+})
+
+function ensureFiles(project){
+  if(project.files.length) return
+  project.workflows.forEach((wf,i)=>project.files.push({id:'f'+(i+1),path:'workflows/'+wf.name+'.py',content:workflowFile(wf),conflict:false,invalid:false,externalContent:null}))
+  project.files.push({id:'f_cfg_'+project.id,path:'config/project.json',content:JSON.stringify({name:project.name,visibility:project.visibility},null,2),conflict:false,invalid:false,externalContent:null})
+}
+state.projects.forEach(ensureFiles)
+
+addEventListener('hashcha
