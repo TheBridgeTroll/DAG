@@ -5,11 +5,47 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <meta name="theme-color" content="#111827">
   <title>DAG Studio</title>
-  <link rel="stylesheet" href="./src/style.css">
+  <link rel="stylesheet" href="./src/style.css?v=20260906-2">
+  <style>#boot{position:fixed;inset:0;display:grid;place-items:center;background:#08101d;color:#e5e7eb;font:14px system-ui;z-index:9999}#boot.error>div{max-width:760px;padding:20px;border:1px solid #fb7185;border-radius:10px;background:#111827}#boot code{display:block;white-space:pre-wrap;margin-top:10px;color:#fda4af}</style>
 </head>
 <body>
+  <div id="boot"><div>Ładowanie Vue…</div></div>
   <div id="app"></div>
-  <script src="https://unpkg.com/vue@3.5.42/dist/vue.global.prod.js"></script>
-  <script src="./src/main.js"></script>
+  <script>
+  (() => {
+    const boot = document.getElementById('boot')
+    const sources = [
+      'https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.42/vue.global.prod.min.js',
+      'https://cdn.jsdelivr.net/npm/vue@3.5.42/dist/vue.global.prod.js',
+      'https://unpkg.com/vue@3.5.42/dist/vue.global.prod.js'
+    ]
+    let settled = false
+    const fail = message => {
+      settled = true
+      boot.className = 'error'
+      boot.innerHTML = '<div><b>Frontend nie wystartował.</b><p>Nie udało się załadować Vue albo kod aplikacji zakończył się błędem.</p><code></code></div>'
+      boot.querySelector('code').textContent = message
+    }
+    window.__DAG_BOOT_OK__ = () => { settled = true; boot.remove() }
+    window.__DAG_BOOT_FAIL__ = fail
+    window.addEventListener('error', e => { if (!settled) fail(e.message || 'Błąd JavaScript') })
+    function loadVue(i) {
+      if (i >= sources.length) return fail('Wszystkie trzy źródła Vue zostały zablokowane lub są niedostępne.')
+      const script = document.createElement('script')
+      script.src = sources[i]
+      script.onload = () => window.Vue ? loadApp() : loadVue(i + 1)
+      script.onerror = () => loadVue(i + 1)
+      document.head.appendChild(script)
+    }
+    function loadApp() {
+      const script = document.createElement('script')
+      script.src = './src/main.js?v=20260906-2'
+      script.onerror = () => fail('Nie udało się pobrać ./src/main.js')
+      document.body.appendChild(script)
+    }
+    loadVue(0)
+    setTimeout(() => { if (!settled) fail('Timeout startu aplikacji po 12 sekundach.') }, 12000)
+  })()
+  </script>
 </body>
 </html>
