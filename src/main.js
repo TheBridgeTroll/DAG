@@ -1,5 +1,4 @@
-import { createApp, ref, computed } from 'vue'
-import './style.css'
+const { createApp, ref, computed } = Vue
 
 const workflows = [
   {id:1,name:'daily_sales_pipeline',status:'Running',schedule:'0 6 * * *',tasks:5,last:'2 min temu'},
