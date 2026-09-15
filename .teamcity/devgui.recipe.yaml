@@ -1,5 +1,5 @@
 name: dag-devgui
-version: 1.0.0
+version: 1.1.0
 title: DAG devgui - build and start
 description: Builds the development image, starts Docker Compose and prunes only dangling devgui images. Requires a Linux agent with Docker and Compose.
 steps:
@@ -7,4 +7,17 @@ steps:
     script: |-
       #!/bin/sh
       set -eu
-      sh scripts/teamcity.sh
+      # Host operations only. Tests, startup and HTTP checks are in Dockerfile.
+      # Checkout devgui into the working directory; allow only one build at a time.
+      compose() { docker compose -p dag-devgui -f compose.yaml "$@"; }
+      cleanup() {
+        result=$?
+        trap - EXIT
+        docker image prune -f --filter 'label=pl.dag.component=devgui' || true
+        exit "$result"
+      }
+      trap cleanup EXIT
+      compose config --quiet
+      compose build
+      compose up -d --wait --wait-timeout 120 --remove-orphans
+      compose ps

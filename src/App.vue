@@ -1,17 +1,44 @@
-<script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
-import { s, project, workflow, role, canEdit, navigate, selectProject, runWorkflow, changed, notify } from './store.js'
+<script>
+import studioOptions from './store.js'
 import Overview from './views/Overview.vue'
 import Designer from './views/Designer.vue'
 import Lineage from './views/Lineage.vue'
 import Ide from './views/Ide.vue'
 import Projects from './views/Projects.vue'
-const routes = [ ['dashboard', 'Pulpit', '▦'], ['workflows', 'Workflowy', '◇'], ['designer', 'Projektant DAG', '⌘'], ['lineage', 'Zależności danych', '⤳'], ['ide', 'IDE', '⌨'], ['runs', 'Uruchomienia', '▷'], ['projects', 'Projekty i zespół', '♙'] ]
-const title = computed(() => routes.find(r => r[0] === s.route)?.[1] || 'Pulpit')
-const view = computed(() => ({ designer: Designer, lineage: Lineage, ide: Ide, projects: Projects }[s.route] || Overview))
-function readHash() { const route = location.hash.slice(1); s.route = routes.some(r => r[0] === route) ? route : 'dashboard' }
-onMounted(() => { readHash(); window.addEventListener('hashchange', readHash) })
-onUnmounted(() => window.removeEventListener('hashchange', readHash))
+
+export default {
+  name: 'App',
+  extends: studioOptions,
+  components: { Overview, Designer, Lineage, Ide, Projects },
+  data() {
+    return {
+      routes: [
+        ['dashboard', 'Pulpit', '▦'], ['workflows', 'Workflowy', '◇'],
+        ['designer', 'Projektant DAG', '⌘'], ['lineage', 'Zależności danych', '⤳'],
+        ['ide', 'IDE', '⌨'], ['runs', 'Uruchomienia', '▷'],
+        ['projects', 'Projekty i zespół', '♙']
+      ]
+    }
+  },
+  provide() { return { studio: this } },
+  computed: {
+    title() { return this.routes.find(route => route[0] === this.s.route)?.[1] || 'Pulpit' },
+    view() {
+      return { designer: 'Designer', lineage: 'Lineage', ide: 'Ide', projects: 'Projects' }[this.s.route] || 'Overview'
+    }
+  },
+  mounted() {
+    this.readHash()
+    window.addEventListener('hashchange', this.readHash)
+  },
+  beforeUnmount() { window.removeEventListener('hashchange', this.readHash) },
+  methods: {
+    readHash() {
+      const route = window.location.hash.slice(1)
+      this.s.route = this.routes.some(item => item[0] === route) ? route : 'dashboard'
+    }
+  }
+}
 </script>
 <template>
   <div class="shell">

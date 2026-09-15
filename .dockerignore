@@ -1,6 +1,5 @@
 .git
 .github
-.teamcity
 node_modules
 dist
 coverage

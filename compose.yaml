@@ -2,9 +2,7 @@ name: dag-devgui
 services:
   gui:
     image: dag-devgui:dev
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     init: true
     ports:
       - "${DEVGUI_BIND:-127.0.0.1}:${DEVGUI_PORT:-5173}:5173"
@@ -18,17 +16,11 @@ services:
         - action: sync
           path: ./index.html
           target: /app/index.html
-        - action: sync
-          path: ./tests
-          target: /app/tests
         - action: rebuild
-          path: ./scripts
-        - action: rebuild
-          path: ./vite.config.js
-        - action: rebuild
-          path: ./package.json
-        - action: rebuild
-          path: ./Dockerfile
+          path: .
+          ignore:
+            - src/
+            - index.html
     logging:
       driver: json-file
       options:
