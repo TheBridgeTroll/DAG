@@ -1,0 +1,10 @@
+name: dag-devgui
+version: 1.0.0
+title: DAG devgui - build and start
+description: Builds the development image, starts Docker Compose and prunes only dangling devgui images. Requires a Linux agent with Docker and Compose.
+steps:
+  - name: Build, start and prune
+    script: |-
+      #!/bin/sh
+      set -eu
+      sh scripts/teamcity.sh

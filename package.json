@@ -1,9 +1,16 @@
 {
-  "name": "dag-wydmuszka",
+  "name": "dag-devgui",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.2.0",
   "type": "module",
+  "engines": { "node": "^22.18.0 || >=24.12.0" },
   "scripts": {
-    "build": "node build.mjs"
-  }
+    "dev": "vite --host 0.0.0.0 --port 5173 --strictPort",
+    "build": "vite build && node scripts/check-build.mjs",
+    "preview": "vite preview --host 0.0.0.0 --port 5173 --strictPort",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm test && npm run build"
+  },
+  "dependencies": { "vue": "3.5.42" },
+  "devDependencies": { "@vitejs/plugin-vue": "6.0.9", "vite": "8.2.2" }
 }
